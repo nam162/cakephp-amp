@@ -1,6 +1,6 @@
 {
-    "name": "your-name-here/AmpManager",
-    "description": "AmpManager plugin for CakePHP",
+    "name": "smpl-mnml/cakephp-amp",
+    "description": "AMP plugin for CakePHP",
     "type": "cakephp-plugin",
     "license": "MIT",
     "require": {
@@ -11,12 +11,12 @@
     },
     "autoload": {
         "psr-4": {
-            "AmpManager\\": "src"
+            "Amp\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "AmpManager\\Test\\": "tests",
+            "Amp\\Test\\": "tests",
             "Cake\\Test\\": "./vendor/cakephp/cakephp/tests"
         }
     }

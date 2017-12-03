@@ -3,11 +3,16 @@ namespace Amp\View\Helper;
 
 use Amp\Core\AmpConfigure;
 use Cake\Utility\Hash;
-use Cake\View\Helper;
+use Cake\View\Helper\HtmlHelper;
 
-class AmpHelper extends Helper
+class AmpHelper extends HtmlHelper
 {
-	public $helpers = ['Html', 'Url'];
+	public $helpers = ['Url'];
+
+	public function initialize(array $config)
+	{
+		parent::initialize($config);
+	}
 
 	/**
 	 * AMP JSライブラリタグを出力
@@ -16,7 +21,7 @@ class AmpHelper extends Helper
 	 */
 	public function library()
 	{
-		return $this->Html->script(AmpConfigure::read('library'), ['async']);
+		return parent::script(AmpConfigure::read('library'), ['async']);
 	}
 
 	/**
@@ -28,14 +33,15 @@ class AmpHelper extends Helper
 	{
 		$boilerplate = AmpConfigure::read('Boilerplate');
 
-		$default  = $this->Html->tag('style', Hash::get($boilerplate, 'default', ''), ['amp-boilerplate']);
-		$noscript = $this->Html->tag('style', Hash::get($boilerplate, 'noscript', ''), ['amp-boilerplate']);
+		$default  = parent::tag('style', $boilerplate['default'], ['amp-boilerplate']);
+		$noscript = parent::tag('style', $boilerplate['noscript'], ['amp-boilerplate']);
 
-		return $default . $this->Html->tag('noscript', $noscript, ['escape' => false]);
+		return $default . parent::tag('noscript', $noscript, ['escape' => false]);
 	}
 
 	/**
 	 * AMP カスタムJSライブラリタグを出力
+	 * ・AMP無効時はタグを出力しない
 	 *
 	 * @param array $url ライブラリ名 => ライブラリURL
 	 * @param array $options
@@ -43,24 +49,51 @@ class AmpHelper extends Helper
 	 */
 	public function script($url, array $options = [])
 	{
-		$options += ['block' => null];
+		if (!$this->_View->amp) {
+			return null;
+		} else {
+			$options += ['block' => null];
 
-		if ($options['block'] === true) {
-			$options['block'] = 'amp-' . __FUNCTION__;
-		}
-
-		if (is_array($url)) {
 			$out = '';
 			foreach ($url as $name => $path) {
-				$out .= $this->Html->script($path, $options + ['async', 'custom-element' => 'amp-' . $name]);
+				if (!isset($name)) {
+					continue;
+				}
+
+				$out .= parent::script($path, ['async', 'custom-element' => 'amp-' . $name] + $options);
+			}
+
+			if (empty($options['block'])) {
+				return $out;
+			}
+
+			if ($options['block'] === true) {
+				$options['block'] = 'amp-' + __FUNCTION__;
+			} else {
+				$options['block'] = 'amp-' + $options['block'];
+			}
+
+			$this->_View->append($options['block'], $out);
+		}
+	}
+
+	public function css($url, array $options = [])
+	{
+		$options += ['amp' => true];
+
+		if ($options['amp'] === false) {
+			return null;
+		}
+
+		$out = '';
+		foreach ($url as $path) {
+			$css = file_get_contents($this->Url->css(WWW_ROOT . 'css/' . $path));
+			if (!empty($css)) {
+				$out .= $css;
 			}
 		}
 
-		if (empty($options['block'])) {
-			return $out;
-		}
-
-		$this->_View->append($options['block'], $out);
+		$this->_View->append('amp-css', $out);
 	}
 
 	/**
@@ -74,8 +107,8 @@ class AmpHelper extends Helper
 	{
 		$options += ['layout' => 'responsive', 'alt' => ''];
 
-		$path = $this->Url->image($path, $options);
+		$path = $this->Url->image($path);
 
-		return $this->Html->tag('amp-img', '', ['src' => $path] + $options);
+		return parent::tag('amp-img', '', ['src' => $path] + $options);
 	}
 }
